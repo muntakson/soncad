@@ -432,19 +432,19 @@ def write_entity(msp: Any, ent: dict, doc: Any) -> None:
         text_pos = (tp["x"], tp["y"])
         override = ent.get("textOverride")
         if dim_type in ("linear", "aligned"):
-            dim = msp.add_linear_dim(p1, p2, distance=10, override={"dimtxt": 2.5})
+            dim = msp.add_linear_dim(base=text_pos, p1=p1, p2=p2, override={"dimtxt": 2.5})
             if override:
                 dim.dimension.dxf.text = override
             dim.render()
         elif dim_type == "radius":
             r = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
             if r > 0:
-                msp.add_radius_dim(p1, r, math.atan2(p2[1] - p1[1], p2[0] - p1[0]),
+                msp.add_radius_dim(center=p1, radius=r, angle=math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0])),
                                    override={"dimtxt": 2.5}).render()
         elif dim_type == "diameter":
             r = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
             if r > 0:
-                msp.add_diameter_dim(p1, r, math.atan2(p2[1] - p1[1], p2[0] - p1[0]),
+                msp.add_diameter_dim(center=p1, radius=r, angle=math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0])),
                                      override={"dimtxt": 2.5}).render()
 
 
@@ -511,9 +511,9 @@ async def dxf_export(payload: ExportPayload):
     for ent in payload.entities:
         write_entity(msp, ent, doc)
 
-    buf = io.BytesIO()
-    doc.write(buf)
-    buf.seek(0)
+    strbuf = io.StringIO()
+    doc.write(strbuf)
+    buf = io.BytesIO(strbuf.getvalue().encode("utf-8"))
 
     return StreamingResponse(
         buf,

@@ -1,0 +1,13 @@
+{
+  "name": "soncad-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MCP server for SonCAD — 쉼터배치도 drawing tool",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  }
+}
