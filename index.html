@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SonCAD — 쉼터배치도</title>
+  <style>
+    :root {
+      --bg-dark: #808080;
+      --bg-darker: #c0c0c0;
+      --bg-toolbar: #c0c0c0;
+      --bg-cmd: #000000;
+      --text-cmd: #cccccc;
+      --text-prompt: #ffffff;
+      --border: #404040;
+      --btn-face: #c0c0c0;
+      --btn-highlight: #ffffff;
+      --btn-shadow: #808080;
+      --status-bg: #c0c0c0;
+      --status-active: #000080;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: "MS Sans Serif", "Segoe UI", Tahoma, sans-serif;
+      font-size: 11px;
+      background: var(--bg-dark);
+    }
+
+    #app {
+      display: flex; flex-direction: column;
+      width: 100%; height: 100%;
+    }
+
+    #menubar {
+      background: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border);
+      padding: 1px 4px;
+      display: flex; align-items: center; gap: 2px;
+      height: 20px; flex-shrink: 0;
+    }
+    #menubar span {
+      padding: 1px 8px;
+      cursor: default;
+      color: #000;
+    }
+    #menubar span:hover { background: var(--status-active); color: #fff; }
+
+    #toolbar {
+      background: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border);
+      padding: 2px 4px;
+      display: flex; align-items: center; gap: 1px;
+      height: 28px; flex-shrink: 0;
+    }
+    .tb-btn {
+      width: 24px; height: 24px;
+      background: var(--btn-face);
+      border-top: 1px solid var(--btn-highlight);
+      border-left: 1px solid var(--btn-highlight);
+      border-bottom: 1px solid var(--btn-shadow);
+      border-right: 1px solid var(--btn-shadow);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 10px; font-weight: bold; color: #000;
+    }
+    .tb-btn:active {
+      border-top: 1px solid var(--btn-shadow);
+      border-left: 1px solid var(--btn-shadow);
+      border-bottom: 1px solid var(--btn-highlight);
+      border-right: 1px solid var(--btn-highlight);
+    }
+    .tb-sep { width: 6px; }
+
+    .tb-btn.accent {
+      background: #1a4a1a; color: #0f0;
+      border-top: 1px solid #2a6a2a; border-left: 1px solid #2a6a2a;
+      border-bottom: 1px solid #0a2a0a; border-right: 1px solid #0a2a0a;
+      font-size: 9px; width: auto; padding: 0 6px; white-space: nowrap;
+    }
+
+    #canvas-area {
+      flex: 1; position: relative; overflow: hidden;
+      background: #000;
+    }
+    #cad-canvas {
+      width: 100%; height: 100%;
+      display: block;
+    }
+
+    #cmdline-area {
+      background: var(--bg-cmd);
+      border-top: 2px solid var(--border);
+      height: 72px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      font-family: "Fixedsys", "Courier New", monospace;
+      font-size: 13px;
+    }
+    #cmd-history {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 2px 6px;
+      color: var(--text-cmd);
+      line-height: 1.3;
+    }
+    #cmd-history div { white-space: pre-wrap; }
+    #cmd-prompt-line {
+      display: flex; align-items: center;
+      border-top: 1px solid #333;
+      padding: 2px 6px;
+      background: #000;
+    }
+    #cmd-prompt-label {
+      color: var(--text-prompt);
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+    #cmd-input {
+      flex: 1;
+      background: transparent; border: none; outline: none;
+      color: var(--text-prompt);
+      font-family: inherit; font-size: inherit;
+      caret-color: #fff;
+    }
+    #cmd-input::placeholder { color: #888; }
+
+    #statusbar {
+      background: var(--status-bg);
+      border-top: 1px solid var(--border);
+      height: 20px; flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 0 6px;
+      gap: 4px;
+      font-size: 10px;
+    }
+    #coord-display {
+      font-family: "Courier New", monospace;
+      color: #000;
+      min-width: 200px;
+    }
+    .status-toggle {
+      padding: 0 6px;
+      cursor: pointer;
+      border: 1px inset var(--btn-face);
+      background: var(--btn-face);
+      color: #808080;
+      font-weight: bold;
+      font-size: 10px;
+      user-select: none;
+    }
+    .status-toggle.active {
+      color: #000;
+      border-style: inset;
+      background: #e0e0e0;
+    }
+    .status-sep { flex: 1; }
+
+    #menubar { position: relative; }
+    #menubar span { position: relative; }
+    #menubar span.menu-open { background: var(--status-active); color: #fff; }
+
+    .menu-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: var(--btn-face);
+      border: 2px outset var(--btn-face);
+      min-width: 180px;
+      z-index: 1000;
+      padding: 2px 0;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    }
+    .menu-dropdown.open { display: block; }
+    .menu-item {
+      padding: 3px 24px 3px 8px;
+      cursor: default;
+      color: #000;
+      white-space: nowrap;
+      font-size: 11px;
+    }
+    .menu-item:hover { background: var(--status-active); color: #fff; }
+    .menu-item.disabled { color: #808080; }
+    .menu-item.disabled:hover { background: transparent; color: #808080; }
+    .menu-sep { height: 1px; background: #808080; margin: 2px 4px; }
+    .menu-shortcut { float: right; color: #808080; margin-left: 20px; }
+    .menu-item:hover .menu-shortcut { color: #ddd; }
+
+    #context-menu {
+      display: none;
+      position: fixed;
+      background: var(--btn-face);
+      border: 2px outset var(--btn-face);
+      min-width: 160px;
+      z-index: 2000;
+      padding: 2px 0;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    }
+    #context-menu.open { display: block; }
+    #context-menu .menu-item { padding: 3px 16px 3px 8px; }
+
+    #cmd-history::-webkit-scrollbar { width: 8px; }
+    #cmd-history::-webkit-scrollbar-track { background: #000; }
+    #cmd-history::-webkit-scrollbar-thumb { background: #444; }
+
+    .cloud-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;
+    }
+    .cloud-overlay.open { display: flex; }
+    .cloud-dialog {
+      background: var(--bg-panel); border: 2px solid #808080; color: #c0c0c0;
+      width: 520px; max-height: 70vh; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 12px;
+    }
+    .cloud-dialog-title {
+      background: #000080; color: #fff; padding: 3px 6px; font-weight: bold; font-size: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .cloud-dialog-title button {
+      background: #c0c0c0; border: 1px outset #c0c0c0; color: #000; font-size: 11px;
+      width: 18px; height: 18px; cursor: pointer; line-height: 1;
+    }
+    .cloud-dialog-body { padding: 10px; }
+    .cloud-file-list {
+      border: 1px inset #808080; background: #000; max-height: 280px; overflow-y: auto; margin-bottom: 8px;
+    }
+    .cloud-file-row {
+      padding: 4px 8px; cursor: pointer; display: flex; justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+    .cloud-file-row:hover { background: #000080; color: #fff; }
+    .cloud-file-row.selected { background: #000080; color: #fff; }
+    .cloud-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cloud-file-meta { color: #808080; font-size: 11px; margin-left: 12px; white-space: nowrap; }
+    .cloud-file-row.selected .cloud-file-meta { color: #c0c0c0; }
+    .cloud-btn-row { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+    .cloud-btn {
+      background: #c0c0c0; border: 2px outset #c0c0c0; color: #000; padding: 3px 16px;
+      font-size: 12px; cursor: pointer; min-width: 70px;
+    }
+    .cloud-btn:hover { background: #d0d0d0; color: #000; }
+    .cloud-btn:active { border-style: inset; }
+    .cloud-btn.primary { font-weight: bold; }
+    .cloud-save-input {
+      width: 100%; box-sizing: border-box; background: #000; color: #c0c0c0;
+      border: 1px inset #808080; padding: 3px 6px; font-size: 12px; margin-bottom: 8px;
+    }
+    .cloud-empty { padding: 20px; text-align: center; color: #808080; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="menubar">
+      <span data-menu="file">File
+        <div class="menu-dropdown" id="menu-file">
+          <div class="menu-item" data-action="new">New</div>
+          <div class="menu-item" data-action="open">Open DXF...</div>
+          <div class="menu-item" data-action="save">Save DXF...</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="exit">Exit</div>
+        </div>
+      </span>
+      <span data-menu="edit">Edit
+        <div class="menu-dropdown" id="menu-edit">
+          <div class="menu-item" data-cmd="UNDO">Undo<span class="menu-shortcut">Ctrl+Z</span></div>
+          <div class="menu-item" data-cmd="REDO">Redo<span class="menu-shortcut">Ctrl+Y</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="selectall">Select All</div>
+          <div class="menu-item" data-action="deselectall">Deselect All</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-cmd="ERASE">Erase</div>
+          <div class="menu-item" data-cmd="MOVE">Move</div>
+          <div class="menu-item" data-cmd="COPY">Copy</div>
+        </div>
+      </span>
+      <span data-menu="view">View
+        <div class="menu-dropdown" id="menu-view">
+          <div class="menu-item" data-cmd="ZOOM">Zoom</div>
+          <div class="menu-item" data-action="zoomall">Zoom All</div>
+          <div class="menu-item" data-cmd="PAN">Pan</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="f7">Grid<span class="menu-shortcut">F7</span></div>
+          <div class="menu-item" data-action="f8">Ortho<span class="menu-shortcut">F8</span></div>
+          <div class="menu-item" data-action="f3">Object Snap<span class="menu-shortcut">F3</span></div>
+        </div>
+      </span>
+      <span data-menu="cadastral">지적도
+        <div class="menu-dropdown" id="menu-cadastral">
+          <div class="menu-item" data-action="cadastral">지적도 Cadastral Import...</div>
+        </div>
+      </span>
+      <span data-menu="draw">Draw
+        <div class="menu-dropdown" id="menu-draw">
+          <div class="menu-item" data-cmd="LINE">Line</div>
+          <div class="menu-item" data-cmd="PLINE">Polyline</div>
+          <div class="menu-item" data-cmd="RECTANG">Rectangle</div>
+          <div class="menu-item" data-cmd="CIRCLE">Circle</div>
+          <div class="menu-item" data-cmd="ARC">Arc</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-cmd="TEXT">Text</div>
+        </div>
+      </span>
+      <span data-menu="modify">Modify
+        <div class="menu-dropdown" id="menu-modify">
+          <div class="menu-item" data-cmd="ERASE">Erase</div>
+          <div class="menu-item" data-cmd="MOVE">Move</div>
+          <div class="menu-item" data-cmd="COPY">Copy</div>
+          <div class="menu-item" data-cmd="ROTATE">Rotate</div>
+          <div class="menu-item" data-cmd="SCALE">Scale</div>
+          <div class="menu-item" data-cmd="MIRROR">Mirror</div>
+          <div class="menu-item" data-cmd="OFFSET">Offset</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-cmd="TRIM">Trim</div>
+          <div class="menu-item" data-cmd="FILLET">Fillet</div>
+        </div>
+      </span>
+      <span data-menu="dimension">Dimension
+        <div class="menu-dropdown" id="menu-dimension">
+          <div class="menu-item" data-cmd="DIMLINEAR">Linear</div>
+          <div class="menu-item" data-cmd="DIMALIGNED">Aligned</div>
+          <div class="menu-item" data-cmd="DIST">Distance</div>
+          <div class="menu-item" data-cmd="AREA">Area</div>
+        </div>
+      </span>
+      <span data-menu="help">Help
+        <div class="menu-dropdown" id="menu-help">
+          <div class="menu-item" data-action="help">Command List<span class="menu-shortcut">F1</span></div>
+        </div>
+      </span>
+    </div>
+
+    <div id="context-menu"></div>
+
+    <div id="toolbar">
+      <button class="tb-btn accent" title="지적도 Cadastral Import" onclick="cmd('CADASTRAL')">지적도</button>
+      <button class="tb-btn accent" title="쉼터 건물배치도" onclick="cmd('SHELTER')">쉼터배치</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Open DXF" onclick="dxfOpen()">📂</button>
+      <button class="tb-btn" title="Save DXF" onclick="dxfSave()">💾</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Line (L)" onclick="cmd('LINE')">L</button>
+      <button class="tb-btn" title="Polyline (PL)" onclick="cmd('PLINE')">PL</button>
+      <button class="tb-btn" title="Rectangle (REC)" onclick="cmd('RECTANG')">R</button>
+      <button class="tb-btn" title="Circle (C)" onclick="cmd('CIRCLE')">C</button>
+      <button class="tb-btn" title="Arc (A)" onclick="cmd('ARC')">A</button>
+      <button class="tb-btn" title="Text (DT)" onclick="cmd('TEXT')">T</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Erase (E)" onclick="cmd('ERASE')">E</button>
+      <button class="tb-btn" title="Move (M)" onclick="cmd('MOVE')">M</button>
+      <button class="tb-btn" title="Copy (CO)" onclick="cmd('COPY')">CO</button>
+      <button class="tb-btn" title="Rotate (RO)" onclick="cmd('ROTATE')">RO</button>
+      <button class="tb-btn" title="Mirror (MI)" onclick="cmd('MIRROR')">MI</button>
+      <button class="tb-btn" title="Offset (O)" onclick="cmd('OFFSET')">O</button>
+      <button class="tb-btn" title="Scale (SC)" onclick="cmd('SCALE')">SC</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Trim (TR)" onclick="cmd('TRIM')">TR</button>
+      <button class="tb-btn" title="Fillet (F)" onclick="cmd('FILLET')">FI</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Dim Linear (DLI)" onclick="cmd('DIMLINEAR')">DL</button>
+      <button class="tb-btn" title="Distance (DI)" onclick="cmd('DIST')">DI</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Zoom Extents (Z E)" onclick="cmd('ZOOM')">ZE</button>
+      <button class="tb-btn" title="Layer (LA)" onclick="cmd('LAYER')">LA</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Undo (U)" onclick="cmd('UNDO')">↶</button>
+      <button class="tb-btn" title="Redo" onclick="cmd('REDO')">↷</button>
+    </div>
+
+    <div id="canvas-area">
+      <canvas id="cad-canvas"></canvas>
+    </div>
+
+    <div id="cmdline-area">
+      <div id="cmd-history"></div>
+      <div id="cmd-prompt-line">
+        <span id="cmd-prompt-label">Command:</span>
+        <input id="cmd-input" type="text" placeholder="Command:" autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+
+    <div id="statusbar">
+      <span id="coord-display">0.0000, 0.0000, 0.0000</span>
+      <div class="status-sep"></div>
+      <span id="layer-display" style="font-weight:bold;color:#000;padding:0 6px;cursor:pointer;" title="Current layer" onclick="cmd('LAYER')">0</span>
+      <span id="snap-display" class="status-toggle active">OSNAP</span>
+      <span id="grid-display" class="status-toggle active">GRID</span>
+      <span id="gridsnap-display" class="status-toggle">snap</span>
+      <span id="ortho-display" class="status-toggle">ortho</span>
+      <span id="lwt-toggle" class="status-toggle">lwt</span>
+      <span id="polar-display" class="status-toggle">polar</span>
+    </div>
+  </div>
+
+  <script>
+    function cmd(name) {
+      if (name === 'CADASTRAL') {
+        document.dispatchEvent(new CustomEvent('soncad-cadastral'));
+        return;
+      }
+      if (name === 'SHELTER') {
+        document.dispatchEvent(new CustomEvent('soncad-cadastral', { detail: 'shelter' }));
+        return;
+      }
+      const input = document.getElementById('cmd-input');
+      input.value = name;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    }
+  </script>
+  <div class="cloud-overlay" id="cloud-overlay">
+    <div class="cloud-dialog" id="cloud-dialog"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "soncad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "쉼터배치도 도면 작성 — 관공서 신고서류용",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  }
+}
