@@ -29,8 +29,8 @@ class Store {
   blockDefs: Map<string, Entity[]> = new Map();
   blockAttribs: Map<string, AttributeDef[]> = new Map();
   groups: Map<string, string[]> = new Map();
-  dimStyles: DimStyle[] = [{ name: 'Standard', textHeight: 2.5, arrowSize: 2, extensionOffset: 1.5, precision: 2, color: '#00ffff' }];
-  currentDimStyle: DimStyle = { name: 'Standard', textHeight: 2.5, arrowSize: 2, extensionOffset: 1.5, precision: 2, color: '#00ffff' };
+  dimStyles: DimStyle[] = [{ name: 'Standard', textHeight: 0.08, arrowSize: 0.05, extensionOffset: 0.025, precision: 0, color: '#00ffff' }];
+  currentDimStyle: DimStyle = { name: 'Standard', textHeight: 0.08, arrowSize: 0.05, extensionOffset: 0.025, precision: 0, color: '#00ffff' };
   currentColor: string = 'bylayer';
   textStyles: TextStyle[] = [{ name: 'Standard', fontFamily: 'monospace', height: 2.5, widthFactor: 1, oblique: 0 }];
   currentTextStyle: string = 'Standard';

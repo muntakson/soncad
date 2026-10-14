@@ -247,6 +247,80 @@
       border: 1px inset #808080; padding: 3px 6px; font-size: 12px; margin-bottom: 8px;
     }
     .cloud-empty { padding: 20px; text-align: center; color: #808080; }
+
+    .mcp-tutorial-body { padding: 12px; overflow-y: auto; max-height: calc(70vh - 30px); color: #c0c0c0; line-height: 1.5; }
+    .mcp-tutorial-body h3 { color: #fff; margin: 12px 0 6px 0; font-size: 13px; border-bottom: 1px solid #555; padding-bottom: 3px; }
+    .mcp-tutorial-body h3:first-child { margin-top: 0; }
+    .mcp-tutorial-body p { margin: 4px 0; font-size: 12px; }
+    .mcp-tutorial-body code { background: #1a1a2e; color: #7fdbca; padding: 1px 4px; font-size: 11px; font-family: 'Courier New', monospace; }
+    .mcp-tutorial-body pre { background: #0a0a1a; border: 1px solid #333; padding: 8px; margin: 6px 0; overflow-x: auto; font-size: 11px; font-family: 'Courier New', monospace; color: #7fdbca; line-height: 1.4; white-space: pre-wrap; }
+    .mcp-tutorial-body ul { margin: 4px 0 4px 16px; font-size: 12px; }
+    .mcp-tutorial-body li { margin: 2px 0; }
+    .mcp-tutorial-body .tool-name { color: #ffd700; font-weight: bold; }
+    .mcp-tutorial-body .section-icon { margin-right: 4px; }
+    .mcp-demo-btn {
+      background: #1a3a5c; color: #7fdbca; border: 1px solid #2a5a8c; padding: 4px 10px;
+      font-size: 11px; cursor: pointer; margin: 3px 4px 3px 0; display: inline-block;
+      font-family: 'Courier New', monospace;
+    }
+    .mcp-demo-btn:hover { background: #2a5a8c; color: #fff; }
+    .mcp-demo-btn:active { background: #0a2a4c; border-style: inset; }
+    .mcp-demo-btn.running { color: #888; cursor: wait; }
+    .mcp-demo-section { background: #0a0a1a; border: 1px solid #333; padding: 8px; margin: 6px 0; }
+    .mcp-demo-section p { margin: 2px 0 6px 0; color: #888; font-size: 11px; }
+
+    .prompt-dialog { width: 760px; }
+    .prompt-body { padding: 12px; overflow-y: auto; max-height: calc(80vh - 30px); color: #c0c0c0; line-height: 1.5; font-size: 12px; }
+    .prompt-body h3 { color: #fff; margin: 16px 0 6px 0; font-size: 13px; border-bottom: 1px solid #555; padding-bottom: 3px; }
+    .prompt-body h3:first-child { margin-top: 0; }
+    .prompt-card {
+      background: #0a0a1a; border: 1px solid #333; padding: 10px 12px; margin: 8px 0;
+      position: relative; cursor: default;
+    }
+    .prompt-card:hover { border-color: #2a5a8c; }
+    .prompt-card-title { color: #7fdbca; font-weight: bold; font-size: 12px; margin-bottom: 4px; }
+    .prompt-card-desc { color: #999; font-size: 11px; margin-bottom: 6px; line-height: 1.4; }
+    .prompt-card-text {
+      background: #1a1a2e; border: 1px solid #444; padding: 8px 10px; margin: 0;
+      color: #e0e0e0; font-size: 11px; font-style: italic; border-left: 3px solid #667eea;
+      line-height: 1.5; white-space: pre-wrap; position: relative;
+    }
+    .prompt-copy-btn {
+      position: absolute; top: 4px; right: 4px;
+      background: #2a5a8c; color: #fff; border: none; padding: 2px 8px;
+      font-size: 10px; cursor: pointer; opacity: 0.7;
+    }
+    .prompt-copy-btn:hover { opacity: 1; }
+    .prompt-copy-btn.copied { background: #2a8c5a; }
+    .prompt-card-tags { margin-top: 6px; }
+    .prompt-tag {
+      display: inline-block; background: #1a3a5c; color: #7fdbca; padding: 1px 6px;
+      font-size: 9px; margin-right: 4px; border-radius: 2px;
+    }
+
+    .mech-dialog { width: 720px; }
+    .mech-body { padding: 12px; overflow-y: auto; max-height: calc(80vh - 30px); color: #c0c0c0; line-height: 1.5; font-size: 12px; }
+    .mech-body h3 { color: #fff; margin: 14px 0 6px 0; font-size: 13px; border-bottom: 1px solid #555; padding-bottom: 3px; }
+    .mech-body h3:first-child { margin-top: 0; }
+    .mech-img-wrap { text-align: center; margin: 8px 0; background: #fff; border: 1px solid #555; padding: 4px; }
+    .mech-img-wrap img { max-width: 100%; max-height: 300px; display: block; margin: 0 auto; }
+    .mech-flow { display: flex; align-items: stretch; gap: 0; margin: 10px 0; }
+    .mech-step { flex: 1; background: #0a0a1a; border: 1px solid #333; padding: 8px 6px; text-align: center; position: relative; }
+    .mech-step.active { border-color: #2a5a8c; background: #0a1a2e; }
+    .mech-step-num { display: inline-block; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; background: #2a5a8c; color: #fff; font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+    .mech-step-title { color: #7fdbca; font-weight: bold; font-size: 11px; margin-bottom: 3px; }
+    .mech-step-desc { color: #999; font-size: 10px; line-height: 1.3; }
+    .mech-arrow { display: flex; align-items: center; color: #2a5a8c; font-size: 18px; padding: 0 2px; }
+    .mech-code { background: #0a0a1a; border: 1px solid #333; padding: 8px; margin: 6px 0; font-family: 'Courier New', monospace; font-size: 11px; color: #7fdbca; line-height: 1.4; overflow-x: auto; white-space: pre-wrap; }
+    .mech-code .comment { color: #555; }
+    .mech-code .fn { color: #ffd700; }
+    .mech-code .val { color: #ff6b6b; }
+    .mech-code .str { color: #a8e6cf; }
+    .mech-prompt-box { background: #1a1a2e; border: 1px solid #444; padding: 8px 10px; margin: 6px 0; color: #e0e0e0; font-size: 12px; font-style: italic; border-left: 3px solid #667eea; }
+    .mech-btn { background: #1a3a5c; color: #7fdbca; border: 1px solid #2a5a8c; padding: 5px 14px; font-size: 12px; cursor: pointer; font-family: 'Courier New', monospace; margin: 3px 4px 3px 0; }
+    .mech-btn:hover { background: #2a5a8c; color: #fff; }
+    .mech-btn:active { border-style: inset; background: #0a2a4c; }
+    .mech-btn.running { opacity: 0.5; cursor: wait; }
   </style>
 </head>
 <body>
@@ -257,6 +331,9 @@
           <div class="menu-item" data-action="new">New</div>
           <div class="menu-item" data-action="open">Open DXF...</div>
           <div class="menu-item" data-action="save">Save DXF...</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="cloud-open">Open from Cloud...</div>
+          <div class="menu-item" data-action="cloud-save">Save to Cloud...</div>
           <div class="menu-sep"></div>
           <div class="menu-item" data-action="exit">Exit</div>
         </div>
@@ -326,6 +403,12 @@
       <span data-menu="help">Help
         <div class="menu-dropdown" id="menu-help">
           <div class="menu-item" data-action="help">Command List<span class="menu-shortcut">F1</span></div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="mcp-tutorial">MCP Tutorial</div>
+          <div class="menu-item" data-action="mech-drawing">Mechanical Drawing</div>
+          <div class="menu-item" data-action="prompt-examples">Design with Prompt</div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-action="mcp-debug">MCP Debug Log</div>
         </div>
       </span>
     </div>

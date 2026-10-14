@@ -10,15 +10,44 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import asyncio
+import json as json_mod
+
 import ezdxf
 import httpx
 from ezdxf.entities import DXFGraphic
-from fastapi import FastAPI, File, Query, UploadFile
+from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="MiniCAD DXF Backend")
+from contextlib import asynccontextmanager
+
+from backend.mcp_tools import mcp as _mcp_server, set_subscribers as _mcp_set_subs, get_state as _mcp_get_state, set_state as _mcp_set_state
+
+_mcp_app = _mcp_server.http_app(path="/")
+
+
+@asynccontextmanager
+async def _lifespan(the_app):
+    async with _mcp_app.router.lifespan_context(_mcp_app):
+        yield
+
+
+app = FastAPI(title="MiniCAD DXF Backend", lifespan=_lifespan)
+app.mount("/api/mcp", _mcp_app)
+
+
+class _McpSlashFix:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and scope.get("path") == "/api/mcp":
+            scope = dict(scope, path="/api/mcp/")
+        await self.app(scope, receive, send)
+
+app.add_middleware(_McpSlashFix)
 
 # ── Cloud storage setup ──
 
@@ -431,8 +460,13 @@ def write_entity(msp: Any, ent: dict, doc: Any) -> None:
         tp = ent.get("textPos", {"x": 0, "y": 0})
         text_pos = (tp["x"], tp["y"])
         override = ent.get("textOverride")
+        dimtxt = 0.08
+        dimasz = 0.05
         if dim_type in ("linear", "aligned"):
-            dim = msp.add_linear_dim(base=text_pos, p1=p1, p2=p2, override={"dimtxt": 2.5})
+            dx = abs(p2[0] - p1[0])
+            dy = abs(p2[1] - p1[1])
+            angle = 90 if dy > dx else 0
+            dim = msp.add_linear_dim(base=text_pos, p1=p1, p2=p2, angle=angle, override={"dimtxt": dimtxt, "dimasz": dimasz})
             if override:
                 dim.dimension.dxf.text = override
             dim.render()
@@ -440,12 +474,12 @@ def write_entity(msp: Any, ent: dict, doc: Any) -> None:
             r = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
             if r > 0:
                 msp.add_radius_dim(center=p1, radius=r, angle=math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0])),
-                                   override={"dimtxt": 2.5}).render()
+                                   override={"dimtxt": dimtxt, "dimasz": dimasz}).render()
         elif dim_type == "diameter":
             r = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
             if r > 0:
                 msp.add_diameter_dim(center=p1, radius=r, angle=math.degrees(math.atan2(p2[1] - p1[1], p2[0] - p1[0])),
-                                     override={"dimtxt": 2.5}).render()
+                                     override={"dimtxt": dimtxt, "dimasz": dimasz}).render()
 
 
 # ── API Endpoints ──
@@ -500,6 +534,13 @@ async def dxf_export(payload: ExportPayload):
     doc = ezdxf.new(dxfversion="R2010", units=ezdxf.units.MM)
     msp = doc.modelspace()
 
+    std = doc.dimstyles.get("Standard")
+    std.dxf.dimtxt = 0.08
+    std.dxf.dimasz = 0.05
+    std.dxf.dimexe = 0.05
+    std.dxf.dimexo = 0.025
+    std.dxf.dimgap = 0.025
+
     for layer_data in payload.layers:
         name = layer_data["name"]
         color = hex_to_aci(layer_data.get("color", "#ffffff"))
@@ -536,6 +577,13 @@ async def cloud_save(payload: CloudSavePayload):
     """Save current drawing as DXF to cloud storage."""
     doc = ezdxf.new(dxfversion="R2010", units=ezdxf.units.MM)
     msp = doc.modelspace()
+
+    std = doc.dimstyles.get("Standard")
+    std.dxf.dimtxt = 0.08
+    std.dxf.dimasz = 0.05
+    std.dxf.dimexe = 0.05
+    std.dxf.dimexo = 0.025
+    std.dxf.dimgap = 0.025
 
     for layer_data in payload.layers:
         name = layer_data["name"]
@@ -670,6 +718,60 @@ def cloud_delete(file_id: str):
         file_path.unlink()
 
     return {"ok": True}
+
+
+# ── MCP Live Sync (SSE) ──
+
+_mcp_subscribers: list[asyncio.Queue] = []
+_mcp_set_subs(_mcp_subscribers)
+
+
+@app.get("/api/live/state")
+async def mcp_state():
+    """Return the current MCP drawing state (entities + layers)."""
+    return _mcp_get_state()
+
+
+@app.post("/api/live/sync")
+async def mcp_sync(request: Request):
+    """Receive entity state from MCP server and broadcast to all SSE subscribers."""
+    data = await request.json()
+    _mcp_set_state(data.get("entities", []), data.get("layers", []))
+    payload = json_mod.dumps(data)
+    dead = []
+    for q in _mcp_subscribers:
+        try:
+            q.put_nowait(payload)
+        except asyncio.QueueFull:
+            dead.append(q)
+    for q in dead:
+        _mcp_subscribers.remove(q)
+    return {"ok": True, "subscribers": len(_mcp_subscribers)}
+
+
+@app.get("/api/live/events")
+async def mcp_events(request: Request):
+    """SSE stream that pushes MCP entity updates to the browser."""
+    queue: asyncio.Queue = asyncio.Queue(maxsize=64)
+    _mcp_subscribers.append(queue)
+
+    async def event_generator():
+        try:
+            yield "event: connected\ndata: {}\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=30.0)
+                    yield f"event: sync\ndata: {payload}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": keepalive\n\n"
+        finally:
+            if queue in _mcp_subscribers:
+                _mcp_subscribers.remove(queue)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 # ── VWorld Cadastral Proxy ──

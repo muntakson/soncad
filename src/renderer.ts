@@ -1089,7 +1089,7 @@ export class Renderer {
     const ds = e.dimOverrides ? { ...base, ...e.dimOverrides } : base;
     ctx.strokeStyle = ds.color;
     ctx.fillStyle = ds.color;
-    const arrowLen = ds.arrowSize * store.view.zoom;
+    const arrowLen = Math.min(20, ds.arrowSize * store.view.zoom);
     const extGap = ds.extensionOffset;
 
     if (e.dimType === 'linear') {
@@ -1194,7 +1194,7 @@ export class Renderer {
     if (!text) return;
     const ds = store.currentDimStyle;
     const sp = store.worldToScreen(worldPos);
-    const fontSize = Math.max(8, ds.textHeight * store.view.zoom);
+    const fontSize = Math.min(24, Math.max(8, ds.textHeight * store.view.zoom));
     this.ctx.font = `${fontSize}px monospace`;
     this.ctx.fillText(text, sp.x - this.ctx.measureText(text).width / 2, sp.y - 4);
   }
